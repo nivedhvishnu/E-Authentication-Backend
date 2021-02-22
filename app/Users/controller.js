@@ -159,5 +159,49 @@ userController.verifyId=(req,res,next)=>{
   }
 }
 
+userController.getClients = (req,res,next)=>{
+  let predicate={}
+  if(req.query.email&&req.query.email.length){
+    predicate.email=req.query.email
+  }
+  Users.find(predicate).select({token:0,salt:0,hash:0,login:0,reset_token:0}).then(users=>{
+    if(users.length){return res.status(200).send(users)}else return res.status(204)
+  }).catch(err=>{
+    return res.status(500).send({message:"DB FETCH ERROR"})
+  })
+}
+
+userController.editClient = async (req,res,next)=>{
+  try {
+    console.log(req.body)
+    let user = await Users.findOne({ email: req.body.email }).select({ id: 1 });
+    console.log(user)
+    if (user) {
+      let updateClient = {
+        name: req.body.name,
+        email: req.body.email,
+        username: req.body.username,
+        company: req.body.company,
+      };
+      let updated = await Users.updateOne({ email: req.body.email }, updateClient, {
+        new: true,
+        strict: true,
+        multi: false,
+      });
+      console.log(updated)
+      if (updated.nModified > 0||updated.ok>0) {
+        return res.status(200).send({ message: "Client Data Updated" });
+      }else
+      return res
+        .status(500)
+        .send({ message: "Error Occured while updating Clients data" });
+    }
+    return res.status(400).send({ message: "User Already Exists" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({ message: "Error while Adding Client" });
+  }
+}
+
 module.exports = userController;
 
